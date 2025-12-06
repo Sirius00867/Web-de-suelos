@@ -1,0 +1,1029 @@
+<!DOCTYPE html> 
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Creador de Suelos 2D (Móvil)</title>
+    <style>
+        /* Estilos Generales y variables */
+        :root{--ui-bg:#f4f6f8;--accent:#2b7be4;--panel:#ffffff;--muted:#666;--shadow:0 6px 20px rgba(20,30,50,.06);--dark:#1f2937}
+        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;margin:0;background:var(--ui-bg);color:var(--dark);transition:background-color .3s; min-height: 100vh;}
+        header{background:var(--panel);padding:12px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 0 rgba(0,0,0,.06)}
+        h1{font-size:16px;margin:0;font-weight:600}
+        
+        /* --- ADAPTACIÓN MÓVIL CRUCIAL --- */
+        main{
+            display:flex;
+            flex-direction: column; /* Apilamiento vertical por defecto (móvil) */
+            gap:12px;
+            padding:12px;
+            min-height:calc(100vh - 55px);
+        }
+        .sidebar{
+            width: 100%; /* El sidebar ocupa todo el ancho en móvil */
+            background:var(--panel);
+            padding:16px;
+            border-radius:12px;
+            box-shadow:var(--shadow);
+            height:fit-content;
+        }
+        .canvas-wrap{
+            width: 100%; /* El canvas ocupa todo el ancho */
+            background:var(--panel);
+            padding:16px;
+            border-radius:12px;
+            display:flex;
+            flex-direction:column;
+            gap:12px;
+            box-shadow:var(--shadow);
+            overflow-x: hidden;
+            order: -1; /* Muestra el plano arriba de los controles en móvil */
+        }
+        canvas{
+            border-radius:8px;
+            border:1px solid #ddd;
+            display:block;
+            width:100%; /* Ajuste de ancho importante para responsividad */
+            height:auto;
+            background: repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 10px, #e0e0e0 10px, #e0e0e0 20px);
+            box-shadow:inset 0 0 10px rgba(0,0,0,.05);
+            /* Asegura que el canvas no se estire demasiado verticalmente en dispositivos pequeños */
+            max-width: 100%;
+        }
+
+        /* MEDIA QUERY para Pantallas Grandes (Tabletas/Desktop) */
+        @media (min-width: 768px) {
+            main {
+                flex-direction: row; /* Vuelve a la disposición horizontal en desktop */
+            }
+            .sidebar {
+                width: 360px; /* Ancho fijo para desktop */
+                min-height: 80vh;
+                position: sticky;
+                top: 12px;
+                order: 0;
+            }
+            .canvas-wrap {
+                flex: 1;
+                order: 0;
+            }
+        }
+        /* --- Fin Adaptación Móvil --- */
+
+
+        /* Estilos de Controles (Colapsables) */
+        .control-group{margin-bottom:15px;padding-bottom:0;border-bottom:none;} 
+        .control-group-header {
+            display: flex;
+            align-items: center;
+            padding: 15px 0; /* Mayor padding para toque fácil */
+            border-bottom: 1px solid #eee;
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--dark);
+            user-select: none;
+            transition: color .2s;
+        }
+        .collapsible-header { cursor: pointer; }
+        .collapsible-header:hover { color: var(--accent); }
+        .toggle-icon { margin-right: 8px; transition: transform 0.2s; font-size: 12px; color: var(--muted); }
+        .control-group.open .toggle-icon { transform: rotate(90deg); color: var(--accent); }
+        .control-group-content {
+            max-height: 1000px; 
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out;
+            padding-top: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee; 
+        }
+        .control-group:not(.open) .control-group-content {
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        /* Estilos de inputs y botones (Aumentados para toque) */
+        label{display:block;margin-bottom:5px;font-size:14px;font-weight:500}
+        input[type="number"], select{width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;transition:border-color .2s; font-size: 16px;}
+        input[type="number"]:focus, select:focus{border-color:var(--accent);outline:none}
+        button{background-color:var(--accent);color:white;padding:12px 18px;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:background-color .2s, transform .1s; font-size: 16px;}
+        button:hover{background-color:#2066c0}
+        button:active{transform:scale(0.98)}
+        .flex-row{display:flex;gap:10px;margin-bottom:10px}
+        .flex-row > * {flex:1}
+
+        /* Tabs de Mobiliario */
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 10px; overflow-x: auto;}
+        .tab-button {
+            padding: 10px 15px; /* Más grande para toque */
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-weight: 500;
+            color: var(--muted);
+            margin-bottom: -2px;
+            transition: color .2s;
+            white-space: nowrap; /* Evita que el texto de la pestaña se rompa */
+        }
+        .tab-button.active {
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+            font-weight: 600;
+        }
+        .tab-content { padding-top: 5px; }
+        .furniture-catalog {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            max-height: 300px; /* Un poco más alto para móvil */
+            overflow-y: auto;
+            padding: 5px;
+        }
+        .furniture-card {
+            /* Asegura que la tarjeta sea un buen objetivo táctil */
+            min-height: 100px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 5px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #fafafa;
+            transition: background .2s, border-color .2s, box-shadow .2s;
+            text-align: center;
+        }
+        .furniture-card:hover { background: #eef4ff; border-color: var(--accent); box-shadow: 0 2px 8px rgba(43, 123, 228, 0.1); }
+        .furniture-card p { margin: 2px 0; font-size: 10px; line-height: 1.2; color: var(--muted); }
+        .furniture-card strong { font-size: 12px; color: var(--dark); }
+        .furniture-icon { font-size: 28px; margin-bottom: 4px; } /* Icono más grande para toque */
+
+        /* Lista de Muebles en la Sala */
+        .furniture-list{max-height:200px;overflow-y:auto;margin-top:10px;padding-right:5px}
+        .furniture-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed #eee; cursor: pointer; transition: background-color .1s;}
+        .furniture-item:hover { background-color: #f7f7f7; }
+        .furniture-item.selected { border-left: 5px solid var(--accent); padding-left: 3px; background-color: #f0f6ff; }
+        .furniture-item:last-child{border-bottom:none}
+        .furniture-details{font-size:14px}
+        .furniture-details p{margin:0}
+        .furniture-details strong{display:inline-block;min-width:40px}
+        
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📐 Plano 2D Móvil (Táctil)</h1>
+    </header>
+
+    <main>
+        <!-- La sección del canvas ahora tiene order: -1 en CSS para aparecer arriba en móvil -->
+        <div class="canvas-wrap">
+            <h2>Vista del Plano</h2>
+            <canvas id="roomPlanCanvas"></canvas>
+            <p style="font-size:12px; color:var(--muted); text-align:center;">
+                * **Toca** un mueble en el plano o en la lista para seleccionarlo.
+                * **Mantén presionado y arrastra** (o arrastra con el ratón en escritorio) el mueble seleccionado para moverlo.
+            </p>
+        </div>
+        
+        <div class="sidebar">
+            <h2>Configuración del Diseño</h2>
+
+            <!-- SECCIÓN: DIMENSIONES DE LA SALA -->
+            <div class="control-group open">
+                <div class="control-group-header">
+                    Dimensiones de la Sala (metros)
+                </div>
+                <div class="control-group-content">
+                    <div class="flex-row">
+                        <div>
+                            <label for="roomW">Ancho (W):</label>
+                            <input type="number" id="roomW" value="5" min="1" step="0.1">
+                        </div>
+                        <div>
+                            <label for="roomH">Alto (H):</label>
+                            <input type="number" id="roomH" value="4" min="1" step="0.1">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="scale">Escala (píxeles por metro):</label>
+                        <input type="number" id="scaleInput" value="100" min="10" step="10">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN: LAMAS DEL SUELO -->
+            <div class="control-group open">
+                <div class="control-group-header">
+                    Lamas del Suelo
+                </div>
+                <div class="control-group-content">
+                    <div class="flex-row">
+                        <div>
+                            <label for="plankW">Ancho Lama (W):</label>
+                            <input type="number" id="plankW" value="0.15" min="0.01" step="0.01">
+                        </div>
+                        <div>
+                            <label for="plankH">Largo Lama (H):</label>
+                            <input type="number" id="plankH" value="1.2" min="0.1" step="0.1">
+                        </div>
+                    </div>
+                    <div class="flex-row">
+                        <div>
+                            <label for="pattern">Patrón:</label>
+                            <select id="pattern">
+                                <option value="straight">Recto (Straight)</option>
+                                <option value="herringbone">Espiga (Herringbone)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="stagger">Desfase (%):</label>
+                            <input type="number" id="stagger" value="50" min="0" max="100" step="5">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN: CONTROLES DE SELECCIÓN -->
+            <div class="control-group open" id="selectionControls" style="display: none;">
+                <div class="control-group-header">
+                    Mueble Seleccionado
+                </div>
+                <div class="control-group-content">
+                    <p id="selectedDetails" style="font-size: 13px; margin-bottom: 12px;"></p>
+                    <button id="rotateButton" style="width: 100%; margin-bottom: 8px;">🔄 Rotar 45°</button>
+                    <button id="deleteSelectedButton" style="background-color: #ef4444; width: 100%;">🗑️ Eliminar Mueble</button>
+                </div>
+            </div>
+
+            <!-- SECCIÓN: CATÁLOGO DE MOBILIARIO -->
+            <div class="control-group open" id="furnitureControlGroup">
+                <div class="control-group-header collapsible-header">
+                    <span class="toggle-icon">▶</span>
+                    Catálogo de Mobiliario
+                </div>
+                <div class="control-group-content">
+                    <h3>Añadir Mobiliario Rápido</h3>
+                    
+                    <div class="tabs" id="furnitureTabs"></div>
+
+                    <div class="tab-content" id="furnitureCatalog"></div>
+
+                    <h3 style="margin-top: 15px;">Muebles en el Plano</h3>
+                    <p style="font-size: 13px; color: var(--muted); margin-bottom: 10px;">
+                        Mueble con dimensiones personalizadas:
+                    </p>
+                    <div class="flex-row">
+                        <input type="number" id="newFurnitureW" placeholder="Ancho (m)" value="0.8" min="0.1" step="0.1">
+                        <input type="number" id="newFurnitureH" placeholder="Alto (m)" value="1.5" min="0.1" step="0.1">
+                    </div>
+                    <button id="addCustomFurnitureButton">Añadir Mueble Personalizado</button>
+
+                    <div class="furniture-list" id="furnitureList"></div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN: ANÁLISIS DE CORTE -->
+            <div class="control-group open">
+                <div class="control-group-header">
+                    Análisis de Corte
+                </div>
+                <div class="control-group-content">
+                    <p>Simula las zonas de corte necesarias alrededor del mobiliario.</p>
+                    <button id="runAnalysisButton">Simular Adaptación de Corte</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        // --- Datos de Mobiliario Predefinido ---
+        const PREDEFINED_FURNITURE = {
+            'living': [
+                { name: 'Sofá 3 plazas', w: 2.2, h: 0.9, color: '#f59e0b', icon: '🛋️', type: 'sofa' },
+                { name: 'Mesa de café (Madera)', w: 1.2, h: 0.6, color: '#10b981', icon: '☕', type: 'table_rect' }, 
+                { name: 'Sillón', w: 0.8, h: 0.9, color: '#f59e0b', icon: '🪑', type: 'armchair' },
+                { name: 'Mueble TV', w: 1.8, h: 0.45, color: '#6366f1', icon: '📺', type: 'cabinet_low' }
+            ],
+            'bedroom': [
+                { name: 'Cama Matrimonio', w: 1.6, h: 2.0, color: '#ef4444', icon: '🛌', type: 'bed_double' },
+                { name: 'Mesita de Noche', w: 0.5, h: 0.4, color: '#10b981', icon: '💡', type: 'table_small' },
+                { name: 'Armario Doble', w: 1.2, h: 0.6, color: '#6366f1', icon: '🚪', type: 'cabinet_tall' },
+                { name: 'Escritorio', w: 1.4, h: 0.7, color: '#06b6d4', icon: '💻', type: 'desk' }
+            ],
+            'kitchen': [
+                { name: 'Mesa Comedor', w: 1.4, h: 0.8, color: '#10b981', icon: '🍽️', type: 'table_rect' },
+                { name: 'Nevera', w: 0.7, h: 0.7, color: '#94a3b8', icon: '🧊', type: 'appliance_square' },
+                { name: 'Isla de Cocina', w: 1.0, h: 1.8, color: '#6366f1', icon: '🍳', type: 'cabinet_low' }
+            ]
+        };
+        const CATEGORY_NAMES = {
+            'living': 'Salón',
+            'bedroom': 'Dormitorio',
+            'kitchen': 'Cocina/Comedor'
+        };
+
+
+        // --- Variables de Configuración y DOM ---
+        const canvas = document.getElementById('roomPlanCanvas');
+        const ctx = canvas.getContext('2d');
+        const roomW = document.getElementById('roomW');
+        const roomH = document.getElementById('roomH');
+        const scaleInput = document.getElementById('scaleInput');
+        const plankW = document.getElementById('plankW');
+        const plankH = document.getElementById('plankH');
+        const pattern = document.getElementById('pattern');
+        const stagger = document.getElementById('stagger');
+        const addCustomFurnitureButton = document.getElementById('addCustomFurnitureButton');
+        const newFurnitureW = document.getElementById('newFurnitureW');
+        const newFurnitureH = document.getElementById('newFurnitureH');
+        const furnitureListEl = document.getElementById('furnitureList');
+        const furnitureCatalogEl = document.getElementById('furnitureCatalog');
+        const furnitureTabsEl = document.getElementById('furnitureTabs');
+        const runAnalysisButton = document.getElementById('runAnalysisButton');
+        
+        const selectionControlsEl = document.getElementById('selectionControls');
+        const selectedDetailsEl = document.getElementById('selectedDetails');
+        const rotateButton = document.getElementById('rotateButton');
+        const deleteSelectedButton = document.getElementById('deleteSelectedButton');
+
+
+        let furniture = [
+            { id: 1, x: 1.0, y: 1.0, w: 0.8, h: 1.5, color: '#6366f1', icon: '📦', type: 'cabinet_tall', rotation: 0 }, 
+            { id: 2, x: 3.5, y: 2.5, w: 1.2, h: 0.6, color: '#10b981', icon: '🖼️', type: 'cabinet_low', rotation: 0 } 
+        ];
+        let nextFurnitureId = 3;
+        let selectedFurniture = null; 
+        let adaptedCuts = []; 
+        let activeCategory = 'living'; 
+
+        // Variables para arrastrar y soltar (D&D y Touch)
+        let isDragging = false;
+        let dragOffsetX = 0; 
+        let dragOffsetY = 0; 
+
+
+        // --- Funciones de Dibujo (Iguales a la versión anterior, enfocadas en Canvas) ---
+
+        function drawPlank(xPos, yPos, w, h, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(xPos, yPos, w, h);
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(xPos, yPos, w, h);
+        }
+
+        function drawFloor(roomW_px, roomH_px, plankW_px, plankH_px, currentPattern) {
+            const baseColor = '#b58f6e';
+            const lightColor = '#c4a78e';
+            const staggerPercent = parseFloat(stagger.value) / 100;
+
+            if (currentPattern === 'straight') {
+                let y = 0;
+                let rowCount = 0;
+
+                while (y < roomH_px) {
+                    let x = -(plankH_px * staggerPercent * rowCount) % plankH_px;
+                    let plankColor = rowCount % 2 === 0 ? baseColor : lightColor;
+                    
+                    while (x < roomW_px) {
+                        const drawX = Math.max(0, x);
+                        const drawW = Math.min(plankH_px, roomW_px - x);
+                        
+                        if (drawW > 0) {
+                            drawPlank(drawX, y, drawW, plankW_px, plankColor);
+                        }
+                        x += plankH_px;
+                    }
+                    
+                    y += plankW_px;
+                    rowCount++;
+                }
+
+            } else if (currentPattern === 'herringbone') {
+                ctx.fillStyle = '#6d5a42'; 
+                ctx.fillRect(0, 0, roomW_px, roomH_px);
+                
+                ctx.strokeStyle = '#5c4c39';
+                ctx.lineWidth = 1;
+                const spacing = 40; 
+                for (let i = -roomH_px; i < roomW_px + roomH_px; i += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i + roomH_px, roomH_px);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(i, roomH_px);
+                    ctx.lineTo(i + roomH_px, 0);
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        function drawFurnitureVisual(f, s, isSelected) {
+            const fx_px = f.x * s; 
+            const fy_px = f.y * s; 
+            const fw_px = f.w * s; 
+            const fh_px = f.h * s; 
+            
+            const angle = f.rotation * Math.PI / 180;
+
+            const isGlass = f.type.includes('glass');
+            const baseColor = f.color;
+            const detailColor = isGlass ? 'rgba(6, 182, 212, 0.7)' : 'rgba(31, 41, 55, 0.7)'; 
+            const contourColor = isGlass ? '#06b6d4' : baseColor; 
+            const fillColor = isGlass 
+                ? (isSelected ? 'rgba(255, 0, 0, 0.2)' : 'rgba(6, 182, 212, 0.1)') 
+                : (isSelected ? baseColor : 'rgba(255, 255, 255, 0.7)'); 
+            
+            const padding = 0.05 * s; 
+            
+            ctx.save();
+            
+            const centerX = fx_px + fw_px / 2;
+            const centerY = fy_px + fh_px / 2;
+            
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angle);
+            
+            const rx = -fw_px / 2; 
+            const ry = -fh_px / 2; 
+            
+            ctx.fillStyle = fillColor;
+            ctx.fillRect(rx, ry, fw_px, fh_px);
+            
+            ctx.strokeStyle = isSelected ? 'red' : contourColor;
+            ctx.lineWidth = isSelected ? 3 : (isGlass ? 2 : 3); 
+            ctx.strokeRect(rx, ry, fw_px, fh_px);
+            
+            ctx.strokeStyle = detailColor;
+            ctx.lineWidth = 1;
+            
+            switch (f.type) {
+                case 'sofa':
+                case 'armchair':
+                    const backrestH = 0.15 * s; 
+                    ctx.fillStyle = detailColor;
+                    ctx.fillRect(rx, ry, fw_px, backrestH);
+                    
+                    ctx.strokeStyle = detailColor;
+                    ctx.lineWidth = 1.5;
+                    const numSeats = f.w > 1.8 ? 3 : (f.w > 1.2 ? 2 : 1);
+
+                    for (let i = 1; i < numSeats; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(rx + fw_px * i / numSeats, ry + backrestH);
+                        ctx.lineTo(rx + fw_px * i / numSeats, ry + fh_px);
+                        ctx.stroke();
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(rx, ry + backrestH);
+                    ctx.lineTo(rx + fw_px, ry + backrestH);
+                    ctx.stroke();
+                    
+                    break;
+
+                case 'bed_double':
+                case 'bed_single':
+                    const headboardH = 0.1 * s; 
+                    ctx.strokeStyle = detailColor;
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(rx, ry + 2);
+                    ctx.lineTo(rx + fw_px, ry + 2);
+                    ctx.stroke();
+                    
+                    ctx.lineWidth = 1;
+                    const numPillows = f.type === 'bed_double' ? 2 : 1;
+                    const pillowW = (fw_px - 2 * padding) / numPillows * 0.9;
+                    const pillowH = fh_px * 0.1;
+
+                    for (let i = 0; i < numPillows; i++) {
+                        const pillowX = rx + padding + (fw_px / numPillows) * i + (fw_px / numPillows - pillowW) / 2;
+                        ctx.strokeRect(pillowX, ry + headboardH + padding, pillowW, pillowH);
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(rx + padding, ry + fh_px - fh_px * 0.3);
+                    ctx.lineTo(rx + fw_px - padding, ry + fh_px - fh_px * 0.3);
+                    ctx.stroke();
+
+                    break;
+                    
+                case 'table_rect':
+                    ctx.strokeStyle = detailColor;
+                    ctx.lineWidth = 1;
+                    
+                    const legSize = 0.03 * s; 
+                    const offset = 0.1 * s; 
+                    const corners = [
+                        { x: rx + offset, y: ry + offset },
+                        { x: rx + fw_px - offset - legSize, y: ry + offset },
+                        { x: rx + offset, y: ry + fh_px - offset - legSize },
+                        { x: rx + fw_px - offset - legSize, y: ry + fh_px - offset - legSize }
+                    ];
+
+                    ctx.fillStyle = detailColor;
+                    corners.forEach(p => {
+                        ctx.fillRect(p.x, p.y, legSize, legSize);
+                    });
+                    
+                    break;
+                
+                case 'table_glass':
+                    ctx.strokeStyle = detailColor;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(rx + padding, ry + padding);
+                    ctx.lineTo(rx + fw_px - padding, ry + fh_px - padding);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(rx + fw_px - padding, ry + padding);
+                    ctx.lineTo(rx + padding, ry + fh_px - padding);
+                    ctx.stroke();
+
+                    ctx.fillStyle = detailColor;
+                    const legR = 0.06 * s;
+                    const legOffset = 0.1 * s;
+
+                    const drawLeg = (lx, ly) => {
+                        ctx.beginPath();
+                        ctx.arc(lx, ly, legR / 2, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
+
+                    drawLeg(rx + legOffset, ry + legOffset);
+                    drawLeg(rx + fw_px - legOffset, ry + legOffset);
+                    drawLeg(rx + legOffset, ry + fh_px - legOffset);
+                    drawLeg(rx + fw_px - legOffset, ry + fh_px - legOffset);
+
+                    break;
+                    
+                case 'cabinet_tall':
+                    ctx.strokeStyle = detailColor;
+                    ctx.lineWidth = 1.5;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(rx + fw_px / 2, ry);
+                    ctx.lineTo(rx + fw_px / 2, ry + fh_px);
+                    ctx.stroke();
+                    
+                    const handleL = fw_px * 0.1;
+                    ctx.beginPath();
+                    ctx.moveTo(rx + fw_px / 4 - handleL / 2, ry + fh_px / 2);
+                    ctx.lineTo(rx + fw_px / 4 + handleL / 2, ry + fh_px / 2);
+                    ctx.moveTo(rx + fw_px * 3 / 4 - handleL / 2, ry + fh_px / 2);
+                    ctx.lineTo(rx + fw_px * 3 / 4 + handleL / 2, ry + fh_px / 2);
+                    ctx.stroke();
+
+                    break;
+                    
+                case 'cabinet_low':
+                case 'appliance_square': 
+                    ctx.strokeStyle = detailColor;
+                    ctx.lineWidth = 1;
+                    
+                    ctx.strokeRect(rx + padding/2, ry + padding/2, fw_px - padding, fh_px - padding);
+                    
+                    break;
+                
+                case 'table_small':
+                    ctx.strokeStyle = detailColor;
+                    ctx.lineWidth = 1;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(rx, ry + fh_px / 3);
+                    ctx.lineTo(rx + fw_px, ry + fh_px / 3);
+                    ctx.stroke();
+                    
+                    const handleLength = fw_px * 0.15;
+                    ctx.beginPath();
+                    ctx.moveTo(rx + fw_px/2 - handleLength/2, ry + fh_px/6);
+                    ctx.lineTo(rx + fw_px/2 + handleLength/2, ry + fh_px/6);
+                    ctx.stroke();
+
+                    break;
+                    
+                case 'desk':
+                    ctx.strokeStyle = detailColor;
+                    ctx.lineWidth = 1.5;
+                    
+                    const chairSpaceW = fw_px * 0.4;
+                    const chairSpaceH = fh_px * 0.3;
+                    
+                    ctx.fillStyle = fillColor;
+                    ctx.fillRect(rx + fw_px / 2 - chairSpaceW / 2, ry + fh_px - chairSpaceH, chairSpaceW, chairSpaceH);
+                    
+                    ctx.strokeStyle = isSelected ? 'red' : contourColor;
+                    ctx.lineWidth = isSelected ? 3 : (isGlass ? 2 : 3);
+                    ctx.strokeRect(rx, ry, fw_px, fh_px);
+
+                    ctx.strokeStyle = detailColor;
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(rx, ry, fw_px, fh_px - chairSpaceH); 
+
+                    break;
+
+                default:
+                    break;
+            }
+
+            if (isSelected) {
+                ctx.strokeStyle = 'red'; 
+                ctx.lineWidth = 5; 
+                ctx.strokeRect(rx, ry, fw_px, fh_px);
+            }
+
+            ctx.restore();
+        }
+
+
+        function drawRoomPlan() {
+            const s = parseFloat(scaleInput.value); 
+            const roomW_m = parseFloat(roomW.value);
+            const roomH_m = parseFloat(roomH.value);
+            const plankW_m = parseFloat(plankW.value);
+            const plankH_m = parseFloat(plankH.value);
+
+            // 1. Ajustar el tamaño del canvas: usa el ancho total del contenedor y calcula el alto proporcional
+            const canvasContainerWidth = canvas.parentNode.clientWidth - 32; // Resta padding del wrap
+            const aspectRatio = roomH_m / roomW_m;
+            canvas.width = canvasContainerWidth;
+            canvas.height = canvasContainerWidth * aspectRatio;
+            
+            // Recalcular la escala real de píxeles por metro
+            const currentScale = canvas.width / roomW_m;
+
+            // 2. Dibujar el fondo y el suelo
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawFloor(canvas.width, canvas.height, plankW_m * currentScale, plankH_m * currentScale, pattern.value);
+
+            // 3. Dibujar el mobiliario usando la currentScale
+            furniture.forEach(f => {
+                const isSelected = selectedFurniture && selectedFurniture.id === f.id;
+                drawFurnitureVisual(f, currentScale, isSelected);
+            });
+
+            // 4. Dibujar las zonas de corte adaptadas
+            adaptedCuts.forEach(cut => {
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.3)'; 
+                ctx.fillRect(cut.x, cut.y, cut.w, cut.h);
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(cut.x, cut.y, cut.w, cut.h);
+            });
+
+            // 5. Actualizar la UI
+            updateFurnitureList();
+            updateSelectionControls();
+        }
+
+
+        // --- Funciones de Interacción del Canvas (Touch/Mouse Unificado) ---
+
+        /**
+         * Obtiene las coordenadas del clic/toque en relación al canvas, compensando el desplazamiento.
+         */
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+
+            if (e.touches && e.touches.length > 0) {
+                // Evento táctil
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                // Evento de ratón
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            const canvasX = clientX - rect.left;
+            const canvasY = clientY - rect.top;
+            return { canvasX, canvasY, clientX, clientY };
+        }
+
+        /**
+         * Verifica si un punto está dentro del área (NO ROTADA) de un mueble.
+         */
+        function isPointInFurniture(f, canvasX, canvasY) {
+            const roomW_m = parseFloat(roomW.value);
+            const currentScale = canvas.width / roomW_m;
+            
+            const fx_px = f.x * currentScale; 
+            const fy_px = f.y * currentScale; 
+            const fw_px = f.w * currentScale; 
+            const fh_px = f.h * currentScale; 
+
+            return canvasX >= fx_px && canvasX <= fx_px + fw_px &&
+                   canvasY >= fy_px && canvasY <= fy_px + fh_px;
+        }
+
+        /**
+         * Mueve el mueble seleccionado al final del array para asegurar el orden de dibujo (z-index).
+         */
+        function moveSelectedFurnitureToTop(f) {
+            const index = furniture.findIndex(item => item.id === f.id);
+            if (index > -1) {
+                const item = furniture.splice(index, 1)[0];
+                furniture.push(item);
+                return item;
+            }
+            return f;
+        }
+
+        /**
+         * Maneja el inicio del arrastre (mousedown o touchstart).
+         */
+        function handlePointerDown(e) {
+            e.preventDefault(); // Evita el desplazamiento de la página en touch
+            const roomW_m = parseFloat(roomW.value);
+            const currentScale = canvas.width / roomW_m;
+            const { canvasX, canvasY } = getCanvasCoords(e);
+
+            // Buscar el mueble clicado (recorrer al revés para la capa superior)
+            const clickedFurniture = furniture.slice().reverse().find(f => isPointInFurniture(f, canvasX, canvasY));
+
+            if (clickedFurniture) {
+                const topFurniture = moveSelectedFurnitureToTop(clickedFurniture);
+
+                selectedFurniture = topFurniture;
+                isDragging = true;
+                
+                // Calcular el desplazamiento (offset) en píxeles
+                dragOffsetX = canvasX - (selectedFurniture.x * currentScale);
+                dragOffsetY = canvasY - (selectedFurniture.y * currentScale);
+
+                drawRoomPlan();
+            } else {
+                // Si no se hizo clic en ningún mueble, deseleccionar
+                selectedFurniture = null;
+                isDragging = false;
+                drawRoomPlan();
+            }
+        }
+
+        /**
+         * Maneja el movimiento del puntero (mousemove o touchmove).
+         */
+        function handlePointerMove(e) {
+            if (!isDragging || !selectedFurniture) return;
+
+            e.preventDefault(); // Evita el desplazamiento
+            const roomW_m = parseFloat(roomW.value);
+            const roomH_m = parseFloat(roomH.value);
+            const currentScale = canvas.width / roomW_m;
+            const { canvasX, canvasY } = getCanvasCoords(e);
+            
+            // Nueva posición del objeto en píxeles
+            let newX_px = canvasX - dragOffsetX;
+            let newY_px = canvasY - dragOffsetY;
+
+            // Restringir la posición dentro de los límites de la habitación (en píxeles)
+            const objW_px = selectedFurniture.w * currentScale;
+            const objH_px = selectedFurniture.h * currentScale;
+            const roomW_px = canvas.width;
+            const roomH_px = canvas.height;
+
+            if (newX_px < 0) newX_px = 0;
+            if (newX_px + objW_px > roomW_px) newX_px = roomW_px - objW_px;
+
+            if (newY_px < 0) newY_px = 0;
+            if (newY_px + objH_px > roomH_px) newY_px = roomH_px - objH_px;
+
+
+            // Convertir la nueva posición a metros y actualizar el objeto
+            selectedFurniture.x = newX_px / currentScale;
+            selectedFurniture.y = newY_px / currentScale;
+
+            drawRoomPlan();
+        }
+
+        /**
+         * Maneja el final del arrastre (mouseup, touchend o touchcancel).
+         */
+        function handlePointerUp() {
+            if (isDragging) {
+                isDragging = false;
+                drawRoomPlan(); 
+            }
+        }
+        
+        // Asignación de Eventos Unificados
+        canvas.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+
+        canvas.addEventListener('mousemove', handlePointerMove);
+        canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
+
+        canvas.addEventListener('mouseup', handlePointerUp);
+        canvas.addEventListener('touchend', handlePointerUp);
+        canvas.addEventListener('touchcancel', handlePointerUp);
+
+
+        // --- Funciones Auxiliares / UI (Iguales a la versión anterior) ---
+
+        function addNewFurniture(w, h, color, icon = '🛠️', type = 'generic') {
+            const roomW_m = parseFloat(roomW.value);
+            const roomH_m = parseFloat(roomH.value);
+
+            if (w > 0 && h > 0 && w <= roomW_m && h <= roomH_m) {
+                const newX = (roomW_m / 2) - (w / 2);
+                const newY = (roomH_m / 2) - (h / 2);
+                
+                const newFurniture = { 
+                    id: nextFurnitureId++, 
+                    x: newX, 
+                    y: newY, 
+                    w: w, 
+                    h: h, 
+                    color: color,
+                    icon: icon, 
+                    type: type, 
+                    rotation: 0 
+                };
+                
+                furniture.push(newFurniture);
+                
+                // Auto-seleccionar el mueble recién añadido
+                selectedFurniture = newFurniture; 
+
+                drawRoomPlan();
+            } else {
+                console.error("Dimensiones inválidas o más grandes que la habitación.");
+            }
+        }
+
+        function renderFurnitureCatalog() {
+            const items = PREDEFINED_FURNITURE[activeCategory];
+            furnitureCatalogEl.innerHTML = '';
+            
+            const catalogDiv = document.createElement('div');
+            catalogDiv.className = 'furniture-catalog';
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'furniture-card';
+                card.innerHTML = `
+                    <span class="furniture-icon">${item.icon}</span>
+                    <strong>${item.name}</strong>
+                    <p>${item.w.toFixed(2)}m x ${item.h.toFixed(2)}m</p>
+                `;
+                card.addEventListener('click', () => {
+                    addNewFurniture(item.w, item.h, item.color, item.icon, item.type);
+                });
+                catalogDiv.appendChild(card);
+            });
+
+            furnitureCatalogEl.appendChild(catalogDiv);
+        }
+
+        function renderFurnitureTabs() {
+            furnitureTabsEl.innerHTML = '';
+            Object.keys(CATEGORY_NAMES).forEach(key => {
+                const button = document.createElement('button');
+                button.className = `tab-button ${key === activeCategory ? 'active' : ''}`;
+                button.textContent = CATEGORY_NAMES[key];
+                button.dataset.category = key;
+                button.addEventListener('click', () => {
+                    activeCategory = key;
+                    renderFurnitureTabs(); 
+                    renderFurnitureCatalog(); 
+                });
+                furnitureTabsEl.appendChild(button);
+            });
+        }
+
+        function updateSelectionControls() {
+            if (selectedFurniture) {
+                selectionControlsEl.style.display = 'block';
+                selectedDetailsEl.innerHTML = `
+                    <p>ID: <strong>${selectedFurniture.id}</strong></p>
+                    <p>W: <strong>${selectedFurniture.w.toFixed(2)}m</strong>, H: <strong>${selectedFurniture.h.toFixed(2)}m</strong></p>
+                    <p>Pos: <strong>(${selectedFurniture.x.toFixed(2)}m, ${selectedFurniture.y.toFixed(2)}m)</strong></p>
+                    <p>Rotación: <strong>${selectedFurniture.rotation}°</strong></p>
+                `;
+            } else {
+                selectionControlsEl.style.display = 'none';
+            }
+        }
+
+        function updateFurnitureList() {
+            furnitureListEl.innerHTML = '';
+
+            furniture.forEach(f => {
+                const div = document.createElement('div');
+                const isSelected = selectedFurniture && selectedFurniture.id === f.id;
+                div.className = `furniture-item ${isSelected ? 'selected' : ''}`;
+                div.dataset.id = f.id;
+                
+                div.innerHTML = `
+                    <div class="furniture-details">
+                        <p><span class="furniture-icon" style="font-size: 16px; margin-right: 5px;">${f.icon || '❓'}</span>
+                           <strong>Mueble ${f.id}</strong> 
+                        </p>
+                        <p>Tipo: ${f.type.toUpperCase()}</p>
+                        <p>W: ${f.w.toFixed(2)}m, H: ${f.h.toFixed(2)}m, Rot: ${f.rotation}°</p>
+                    </div>
+                `;
+                div.addEventListener('click', () => {
+                    const topFurniture = moveSelectedFurnitureToTop(f);
+                    selectedFurniture = topFurniture;
+                    drawRoomPlan();
+                });
+
+                furnitureListEl.appendChild(div);
+            });
+        }
+
+        function simulateAIAdapt(payload){
+            // Recalcula la escala dentro de la simulación
+            const roomW_m = parseFloat(roomW.value);
+            const currentScale = canvas.width / roomW_m;
+            const cuts = [];
+            
+            payload.furniture.forEach(f=>{
+                const fx = Math.round(f.x * currentScale);
+                const fy = Math.round(f.y * currentScale);
+                const fw = Math.round(f.w * currentScale);
+                const fh = Math.round(f.h * currentScale);
+                const margin = Math.round(0.1 * currentScale); 
+                
+                cuts.push({x: fx - margin, y: fy - margin, w: fw + margin*2, h: fh + margin*2});
+            });
+            return cuts;
+        }
+
+        function initializeCollapsibleSections() {
+            const furnitureHeader = document.querySelector('#furnitureControlGroup .collapsible-header');
+            if (furnitureHeader) {
+                furnitureHeader.addEventListener('click', () => {
+                    const group = furnitureHeader.closest('.control-group');
+                    group.classList.toggle('open');
+                });
+            }
+        }
+
+        // --- Eventos de UI ---
+
+        addCustomFurnitureButton.addEventListener('click', () => {
+            const w = parseFloat(newFurnitureW.value);
+            const h = parseFloat(newFurnitureH.value);
+            addNewFurniture(w, h, '#7c3aed', '🛠️', 'generic'); 
+        });
+
+        rotateButton.addEventListener('click', () => {
+            if (selectedFurniture) {
+                selectedFurniture.rotation = (selectedFurniture.rotation + 45) % 360;
+                drawRoomPlan();
+            }
+        });
+
+        deleteSelectedButton.addEventListener('click', () => {
+            if (selectedFurniture) {
+                furniture = furniture.filter(f => f.id !== selectedFurniture.id);
+                selectedFurniture = null;
+                drawRoomPlan();
+            }
+        });
+
+        runAnalysisButton.addEventListener('click', () => {
+            const payload = {
+                room: {w: parseFloat(roomW.value), h: parseFloat(roomH.value)},
+                plank: {w: parseFloat(plankW.value), h: parseFloat(plankH.value), pattern: pattern.value, stagger: parseFloat(stagger.value)},
+                furniture
+            };
+            
+            adaptedCuts = simulateAIAdapt(payload);
+            drawRoomPlan();
+        });
+
+
+        // Eventos para redibujar el plano cuando cambian los inputs
+        [roomW,roomH,scaleInput,plankW,plankH,pattern,stagger].forEach(el=>el.addEventListener('input', () => {
+             adaptedCuts = []; 
+             drawRoomPlan();
+        }));
+        
+        // Evento para redibujar cuando la ventana cambia de tamaño (CRUCIAL para móvil)
+        window.addEventListener('resize', drawRoomPlan);
+
+
+        // --- Inicialización ---
+        window.onload = () => {
+            renderFurnitureTabs();
+            renderFurnitureCatalog();
+            initializeCollapsibleSections(); 
+            // Llamar a drawRoomPlan al inicio y en el resize para asegurar el tamaño correcto
+            drawRoomPlan(); 
+        };
+        
+    </script>
+</body>
+</html>
