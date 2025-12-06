@@ -1,4 +1,4 @@
-📐 Creador de Planos y Suelos 2D Interactivo (Móvil-First)
+📐 Creador de Planos y Suelos 2D Interactivo (Mobile and Desktop Web)
 
   🌟 Introducción
   
