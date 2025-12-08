@@ -10,7 +10,7 @@
         body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;margin:0;background:var(--ui-bg);color:var(--dark);transition:background-color .3s; min-height: 100vh;}
         header{background:var(--panel);padding:12px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 0 rgba(0,0,0,.06)}
         h1{font-size:16px;margin:0;font-weight:600}
-
+        
         /* --- ADAPTACIÓN MÓVIL CRUCIAL --- */
         main{
             display:flex;
@@ -102,7 +102,7 @@
             padding-bottom: 0;
             border-bottom: none;
         }
-
+        
         /* Estilos de inputs y botones (Aumentados para toque) */
         label{display:block;margin-bottom:5px;font-size:14px;font-weight:500}
         input[type="number"], select{width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:8px;box-sizing:border-box;transition:border-color .2s; font-size: 16px;}
@@ -165,7 +165,7 @@
             font-weight: 600;
         }
         .tab-content { padding-top: 5px; }
-
+        
         .brand-header {
             font-size: 14px;
             font-weight: 600;
@@ -227,7 +227,7 @@
         .gemini-loading svg {
             margin-right: 8px;
         }
-
+        
     </style>
 </head>
 <body>
@@ -246,7 +246,7 @@
                 * **Mantén presionado y arrastra** (o arrastra con el ratón en escritorio) el mueble seleccionado para moverlo.
             </p>
         </div>
-
+        
         <div class="sidebar">
             <h2>Configuración del Diseño</h2>
 
@@ -312,7 +312,7 @@
                 </div>
                 <div class="control-group-content">
                     <p id="selectedDetails" style="font-size: 13px; margin-bottom: 12px;"></p>
-
+                    
                     <!-- SELECTOR DE ESTILO -->
                     <div id="styleSelector">
                         <label>Estilo del Mueble:</label>
@@ -335,7 +335,7 @@
                 </div>
                 <div class="control-group-content">
                     <h3>Añadir Mobiliario Rápido</h3>
-
+                    
                     <div class="tabs" id="furnitureTabs"></div>
 
                     <!-- El catálogo ahora contiene una estructura de carpetas (Brand Header) -->
@@ -362,16 +362,16 @@
                 </div>
                 <div class="control-group-content">
                     <p>Simula las zonas de corte necesarias alrededor del mobiliario. **(Las líneas rojas discontinuas se actualizan automáticamente al mover)**</p>
-
+                    
                     <button id="runAnalysisButton" style="width: 100%; margin-bottom: 8px;">
                         1. Obtener Recomendaciones de Corte (IA)
                     </button>
-
+                    
                     <!-- BOTÓN DE RECALCULO VISUAL SIMPLE (PARA FUERZAR SI SE NECESITA) -->
                     <button id="recalculateVisualButton" style="background-color: #06b6d4; width: 100%; margin-bottom: 12px;">
                         2. Forzar Recalcular Visualización
                     </button>
-
+                    
                     <!-- Salida del Análisis de Gemini -->
                     <div id="gemini-analysis-output" class="mt-4 p-3 bg-gray-100 rounded-lg text-sm transition duration-300">
                         <p class="text-gray-600 italic">Presione el botón 1 para enviar el plano a Gemini y obtener recomendaciones de corte.</p>
@@ -390,7 +390,7 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
+        
         let db, auth, userId = null;
         let isAuthReady = false;
 
@@ -623,7 +623,7 @@
         const runAnalysisButton = document.getElementById('runAnalysisButton');
         const recalculateVisualButton = document.getElementById('recalculateVisualButton');
         const geminiOutputEl = document.getElementById('gemini-analysis-output');
-
+        
         const selectionControlsEl = document.getElementById('selectionControls');
         const selectedDetailsEl = document.getElementById('selectedDetails');
         const rotateButton = document.getElementById('rotateButton');
@@ -722,18 +722,18 @@
                     let xOffset = (plankH_px * staggerPercent * rowCount) % plankH_px;
                     let x = -xOffset;
                     let plankColor = rowCount % 2 === 0 ? baseColor : lightColor;
-
+                    
                     while (x < roomW_px) {
                         const drawX = Math.max(0, x);
                         const drawW = Math.min(plankH_px, roomW_px - x);
                         const drawH = Math.min(plankW_px, roomH_px - y);
-
+                        
                         if (drawW > 0 && drawH > 0) {
                             drawPlank(drawX, y, drawW, drawH, plankColor);
                         }
                         x += plankH_px; 
                     }
-
+                    
                     y += plankW_px; 
                     rowCount++;
                 }
@@ -741,12 +741,12 @@
             } else if (currentPattern === 'herringbone') {
                 ctx.fillStyle = baseColor; 
                 ctx.fillRect(0, 0, roomW_px, roomH_px);
-
+                
                 ctx.strokeStyle = lightColor;
                 ctx.lineWidth = 2; 
-
+                
                 const unitSize = plankW_px * 2; 
-
+                
                 for (let i = -roomH_px; i < roomW_px + roomH_px; i += unitSize) {
                     ctx.beginPath();
                     ctx.moveTo(i, 0);
@@ -777,12 +777,12 @@
             ctx.fillStyle = style.cushion;
             // Dibujar el área del asiento sin el respaldo ni los reposabrazos
             ctx.fillRect(-w_px / 2 + armW, -h_px / 2 + backrestH, w_px - 2 * armW, cushionH - backrestH - armW);
-
+            
             // 3. Respaldo (Detalle)
             ctx.fillStyle = style.detail;
             ctx.fillRect(-w_px / 2, -h_px / 2, w_px, backrestH); 
         }
-
+        
         function drawOttoman(f, w_px, h_px, style) {
             // 1. Cuerpo (Base)
             ctx.fillStyle = style.fill;
@@ -792,7 +792,7 @@
             const padding = w_px * 0.08;
             ctx.fillStyle = style.cushion;
             ctx.fillRect(-w_px / 2 + padding, -h_px / 2 + padding, w_px - 2 * padding, h_px - 2 * padding);
-
+            
             // 3. Detalle (Costura central)
             ctx.strokeStyle = style.detail;
             ctx.lineWidth = 1;
@@ -837,7 +837,7 @@
             ctx.strokeStyle = style.detail;
             ctx.lineWidth = 2;
             ctx.strokeRect(-w_px / 2, -h_px / 2, w_px, h_px);
-
+            
             // 3. Patas (Simplificadas como cuadrados sólidos)
             ctx.fillStyle = style.detail;
             // Pata Superior Izquierda
@@ -883,7 +883,7 @@
             ctx.strokeStyle = style.detail;
             ctx.lineWidth = 2;
             ctx.strokeRect(-w_px / 2, -h_px / 2, w_px, h_px);
-
+            
             // 3. Divisiones/Cajones (Líneas divisorias simples)
             ctx.strokeStyle = style.detail;
             ctx.lineWidth = 1;
@@ -915,15 +915,15 @@
             const fy_px = f.y * s; 
             const fw_px = f.w * s; 
             const fh_px = f.h * s; 
-
+            
             const angle = f.rotation * Math.PI / 180;
             const style = STYLES[f.selectedStyleKey] || STYLES['custom_default'];
-
+            
             // 1. Aplicar transformaciones de rotación
             ctx.save();
             ctx.translate(fx_px + fw_px / 2, fy_px + fh_px / 2);
             ctx.rotate(angle);
-
+            
             // 2. Dibujar el mueble según su tipo con el estilo seleccionado
             switch (f.type) {
                 case 'sofa':
@@ -957,7 +957,7 @@
             if (isSelected) {
                 ctx.strokeStyle = '#ef4444'; // Rojo de selección
                 ctx.lineWidth = 3;
-
+                
                 // Para las mesas redondas, el recuadro es más informativo que el círculo
                 ctx.strokeRect(-fw_px / 2, -fh_px / 2, fw_px, fh_px);
             }
@@ -980,7 +980,7 @@
 
         function drawCuts() {
             if (!isAnalysisActive || adaptedCuts.length === 0) return;
-
+            
             ctx.save();
             ctx.strokeStyle = '#ef4444'; 
             ctx.lineWidth = 4;
@@ -1029,19 +1029,19 @@
             ctx.lineWidth = 4;
             ctx.strokeRect(0, 0, rW_px, rH_px);
         }
-
+        
         // --- Furniture List and Selection ---
 
         function updateFurnitureList() {
             furnitureListEl.innerHTML = '';
-
+            
             furniture.forEach(f => {
                 const item = document.createElement('div');
                 item.className = `furniture-item ${selectedFurniture && selectedFurniture.id === f.id ? 'selected' : ''}`;
                 item.dataset.id = f.id;
 
                 // Nota: La marca siempre está en el objeto 'f'
-
+                
                 item.innerHTML = `
                     <div class="furniture-details">
                         <p><strong>${f.name.split(' ')[0]}</strong> (${f.icon || '⬛'})</p>
@@ -1054,16 +1054,16 @@
                 furnitureListEl.appendChild(item);
             });
         }
-
+        
         // --- Style Selector Handler ---
         function renderStyleSelector() {
             styleOptionsContainer.innerHTML = '';
-
+            
             if (!selectedFurniture) return;
 
             // Para encontrar las definiciones base, iteramos sobre todas las marcas
             let baseTypeDefinition = { styles: ['custom_default'] };
-
+            
             for (const room in PREDEFINED_FURNITURE) {
                 for (const brand in PREDEFINED_FURNITURE[room]) {
                     const found = PREDEFINED_FURNITURE[room][brand].find(f => 
@@ -1075,7 +1075,7 @@
                     }
                 }
             }
-
+            
             // Si es un mueble personalizado, usamos el default genérico
             const availableStyles = selectedFurniture.type === 'custom' 
                 ? ['custom_default', 'wood_light', 'metal_grey'] 
@@ -1091,7 +1091,7 @@
                 option.dataset.name = styleDef.name;
                 option.style.backgroundColor = styleDef.fill;
                 option.title = styleDef.name;
-
+                
                 // Un patrón visual simple para las maderas
                 if (styleDef.pattern === 'line') {
                     option.style.backgroundImage = `repeating-linear-gradient(45deg, ${styleDef.detail} 0, ${styleDef.detail} 1px, ${styleDef.fill} 1px, ${styleDef.fill} 10px)`;
@@ -1140,7 +1140,7 @@
                 clientX = e.clientX;
                 clientY = e.clientY;
             }
-
+            
             const scaleFactor = canvas.width / rect.width;
 
             return {
@@ -1152,13 +1152,13 @@
         function onPointerDown(e) {
             e.preventDefault();
             const pos = getEventPos(e);
-
+            
             const hitItem = furniture.find(item => {
                 const x_px = mToPx(item.x);
                 const y_px = mToPx(item.y);
                 const w_px = mToPx(item.w);
                 const h_px = mToPx(item.h);
-
+                
                 // Simple AABB hit check (ignoring rotation for simplicity in 2D top-down selection)
                 return pos.x >= x_px && pos.x <= x_px + w_px &&
                        pos.y >= y_px && pos.y <= y_px + h_px;
@@ -1178,20 +1178,20 @@
         function onPointerMove(e) {
             if (!isDragging || !selectedFurniture) return;
             e.preventDefault();
-
+            
             const pos = getEventPos(e);
             const item = selectedFurniture;
 
             let newX_m = pxToM(pos.x - dragOffsetX);
             let newY_m = pxToM(pos.y - dragOffsetY);
-
+            
             // Boundary check
             newX_m = Math.max(0, Math.min(newX_m, parseFloat(roomW.value) - item.w));
             newY_m = Math.max(0, Math.min(newY_m, parseFloat(roomH.value) - item.h));
 
             item.x = newX_m;
             item.y = newY_m;
-
+            
             if (isAnalysisActive) {
                 recalculateCuts(); 
             }
@@ -1272,10 +1272,10 @@
             if (selectedFurniture) {
                 // Rotar 90 grados
                 selectedFurniture.rotation = (selectedFurniture.rotation + 90) % 360;
-
+                
                 // Intercambiar Ancho y Alto
                 [selectedFurniture.w, selectedFurniture.h] = [selectedFurniture.h, selectedFurniture.w];
-
+                
                 handleFurnitureChange();
                 drawPlan();
                 updateFurnitureList(); 
@@ -1308,7 +1308,7 @@
 
             recalculateCuts();
             drawPlan();
-
+            
             geminiOutputEl.innerHTML = '<p class="text-gray-600 italic">La visualización de las zonas de corte (líneas rojas) ha sido forzada a refrescar.</p>';
         });
 
@@ -1322,7 +1322,7 @@
                 geminiOutputEl.innerHTML = '<p style="color:#ef4444; font-weight:bold;">Error: Autenticación no lista. Inténtalo de nuevo.</p>';
                 return;
             }
-
+            
             if (furniture.length === 0) {
                 geminiOutputEl.innerHTML = '<p style="color:#f59e0b; font-weight:bold;">Aviso: Añade muebles al plano para realizar un análisis de corte.</p>';
                 isAnalysisActive = false; 
@@ -1347,13 +1347,13 @@
                     Analizando corte...
                 </div>
             `;
-
+            
             const roomW_m = parseFloat(roomW.value).toFixed(2);
             const roomH_m = parseFloat(roomH.value).toFixed(2);
             const plankL = parseFloat(plankH.value).toFixed(2); 
             const plankW = parseFloat(plankW.value).toFixed(2); 
             const currentPattern = pattern.value === 'straight' ? `Recto con desfase del ${stagger.value}%` : 'Espiga (Herringbone) a 45 grados';
-
+            
             const furnitureDetails = furniture.map(f => {
                 const x = f.x.toFixed(2);
                 const y = f.y.toFixed(2);
@@ -1395,17 +1395,17 @@ Proporciona una guía concisa y práctica:
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-
+                    
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
 
                     const result = await response.json();
                     const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo obtener el análisis. Inténtalo de nuevo.";
-
+                    
                     const formattedText = text.replace(/\n/g, '<br>');
                     geminiOutputEl.innerHTML = `<p>${formattedText}</p>`;
-
+                    
                     break; 
 
                 } catch (error) {
@@ -1418,7 +1418,7 @@ Proporciona una guía concisa y práctica:
                     }
                 }
             }
-
+            
             runAnalysisButton.disabled = false;
         }
 
@@ -1427,7 +1427,7 @@ Proporciona una guía concisa y práctica:
         function renderFurnitureCatalog(category) {
             furnitureCatalogEl.innerHTML = '';
             const brands = PREDEFINED_FURNITURE[category];
-
+            
             for (const brandName in brands) {
                 if (brands.hasOwnProperty(brandName)) {
                     // 1. Crear el encabezado de la Marca (simulando una carpeta)
@@ -1435,7 +1435,7 @@ Proporciona una guía concisa y práctica:
                     brandHeader.className = 'brand-header';
                     brandHeader.innerHTML = `📦 ${brandName}`;
                     furnitureCatalogEl.appendChild(brandHeader);
-
+                    
                     // 2. Crear un contenedor flexible para los muebles de esa marca
                     const itemsContainer = document.createElement('div');
                     itemsContainer.className = 'furniture-brand-container';
@@ -1465,13 +1465,13 @@ Proporciona una guía concisa y práctica:
                                 selectedStyleKey: f.defaultStyle
                             };
                             furniture.push(newF);
-
+                            
                             handleFurnitureChange(); 
                             selectFurniture(newF.id);
                         });
                         itemsContainer.appendChild(card);
                     });
-
+                    
                     furnitureCatalogEl.appendChild(itemsContainer);
                 }
             }
@@ -1506,7 +1506,7 @@ Proporciona una guía concisa y práctica:
                 furnitureTabsEl.appendChild(button);
             });
             renderFurnitureCatalog(activeCategory);
-
+            
             // Initial render
             updateScaleAndCanvas(); 
             canvas.style.cursor = 'default';
