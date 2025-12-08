@@ -1,4 +1,4 @@
-📐 Interactive 2D Floor and Layout Creator (Mobile-First)
+📐 Interactive 2D Floor and Layout Creator (Mobile_Website and Desktop_Website)
 
   🌟 Introduction
   
