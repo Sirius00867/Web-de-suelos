@@ -4,7 +4,7 @@
   
     The 2D Floor and Layout Creator is a simple web tool designed for visualizing and planning interior designs, with a particular focus on simulating laminate or wood flooring installation patterns.
     
-    Its main purpose is to allow users to define room dimensions, choose the plank pattern (straight lay or herringbone), and place furniture to preview the final design. The application is optimized for touch interaction      on mobile devices.
+    Its main purpose is to allow users to define room dimensions, choose the plank pattern (straight lay or herringbone), and place furniture to preview the final design. The application is optimized for touch interaction on mobile devices.
   
   🔑 Key Features
   
